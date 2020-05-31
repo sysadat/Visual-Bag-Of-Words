@@ -1,50 +1,50 @@
 clear
 close all
 load('twoFrameData.mat');
-%addpath('./provided_code/'); %make folder for this 
+addpath('./provided_code/'); 
 
-imshow(im1); % new 
+imshow(im1); 
 [oninds] = selectRegion(im1,positions1);
 
-imGray = rgb2gray(im1);
-im = rgb2gray(im2);
-[r, ~] = size(oninds);
-[m, ~] = size(descriptors2);
+imGrayscale = rgb2gray(im1);
+[row, ~] = size(oninds);
+[mVal, ~] = size(descriptors2);
 
 D = [];
-for i = 1:r
+
+for i = 1:row
     index = oninds(i,1);
     
     posPatch = positions1(index,:);
     scalePatch = scales1(index);
     orientPatch = orients1(index);
     
-    patch1 = getPatchFromSIFTParameters(posPatch, scalePatch, orientPatch, imGray); %grab the first patch in oninds
-    A = zeros(m,1);
-    for j = 1:m
+    patchOne = getPatchFromSIFTParameters(posPatch, scalePatch, orientPatch, imGrayscale); 
+    A = zeros(mVal,1);
+    for j = 1:mVal
         xDistVal = descriptors1(index,:)';
         yDistVal = descriptors2(j,:)';
-        z = distSqr(xDistVal, yDistVal);%distance from ith patch(im1) to jth in im2. VVV
-       A(j,1) = z;                                            %|-> Transposed because distsqr needs it like that      
+        zVal = distSqr(xDistVal, yDistVal);
+       A(j,1) = zVal;                                                  
     end
-    [var,ind] = mink(A',2); %transpose because A is column
-    newThreshold = var(2)/var(1);
+    [variable,ind] = mink(A',2);
+    newThreshold = variable(2)/variable(1);
     
-    if newThreshold > 1.4 % NEW AND IMPROVED threshold
+    if newThreshold > 1.4 
         D = cat(2, D, ind(1));
     end    
 end
 
 [~,q]=size(D);
 patchesParam = {zeros(q,2), zeros(q,1),zeros(q,1)};
-[positionF, scaleF, orientF] = patchesParam{:}; 
+[positionFinal, scaleFinal, orientFinal] = patchesParam{:}; 
 
 for k = 1:q
     i=D(1,k);
-    positionF(k,:) = positions2(i,:);
-    scaleF(k,1) = scales2(i,1);
-    orientF(k,1) = orients2(i,1);
+    positionFinal(k,:) = positions2(i,:);
+    scaleFinal(k,1) = scales2(i,1);
+    orientFinal(k,1) = orients2(i,1);
 end
 
 imshow(im2);
-displaySIFTPatches(positionF,scaleF,orientF,im2);
+displaySIFTPatches(positionFinal,scaleFinal,orientFinal,im2);
