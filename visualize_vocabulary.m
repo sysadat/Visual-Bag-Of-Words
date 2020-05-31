@@ -61,4 +61,53 @@ word2 = means(secondWord, :);
 firstSearch = find(firstWord == membership);
 secondSearch = find(secindWord == membership);
 
+firstSearchSize = size(firstSearch,1);
+A = zeros(firstSearchSize, 1);
+for i=1:firstSearchSize
+    firstWordTranspose = word1;
+    z = distSqr(firstWordTranspose,vocabDescriptor(firstSearch(i,1),:)');
+    A(i,1) = z;
+end
+figure;
 
+matchesToPlot = 25;
+for i=1:matchesToPlot
+    newA = A';
+    [~, index] = min(newA);
+    A(index, 1) = 1;
+    index = firstSearch(index);
+    t = [siftdir '/' fnames(randInt(vocabFile(index))).name];
+    load(t,'imname');
+    gray = rgb2gray(imread([framesdir '/' imname]));
+    patch = getPatchFromSIFTParameters(vocPositions(index,:),vocabScales(index,:),vocabOrientations(index,:),gray); 
+    subplot(5,5,i); 
+    imshow(patch);
+end
+
+word1 = means(firstWord, :);
+word2 = means(secondWord, :);
+firstSearch = find(firstWord == membership);
+secondSearch = find(secindWord == membership);
+
+secondSearchSize = size(secondSearch,1);
+A = zeros(secondSearchSize, 1);
+for i=1:secondSearchSize
+    secondWordTranspose = word2;
+    z = distSqr(secondtWordTranspose,vocabDescriptor(secondSearch(i,1),:)');
+    A(i,1) = z;
+end
+figure;
+
+matchesToPlot = 25;
+for i=1:matchesToPlot
+    newA = A';
+    [~, index] = min(newA);
+    A(index, 1) = 1;
+    index = secondSearch(index);
+    t = [siftdir '/' fnames(randInt(vocabFile(index))).name];
+    load(t,'imname');
+    gray = rgb2gray(imread([framesdir '/' imname]));
+    patch = getPatchFromSIFTParameters(vocPositions(index,:),vocabScales(index,:),vocabOrientations(index,:),gray); 
+    subplot(5,5,i); 
+    imshow(patch);
+end
