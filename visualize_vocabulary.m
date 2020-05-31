@@ -1,71 +1,69 @@
-% Get access to all the paths and directories
-framesdir = './frames/';
 addpath('./provided_code/');
+framesdir = './frames/';
 siftdir = './sift/';
 fnames = dir([siftdir '/*.mat']);
 
-% Variable to hold the amount of images we want to go through, like say 500
 randomImageLength = 500;
 fnamesLength = length(fnames);
-randInt = randi(fnamesLength, randomImageLength, 1);
+r = randi(fnamesLength, randomImageLength, 1);
 
-vocabFile = [];
-vocabScales = [];
-vocabIndicies = [];
-vocabDescriptor = [];
-vocabOrientations = [];
+voc=[];
+vocPositions=[];
+vocScales=[];
+vocOrients=[];
+vocFile=[];
 
 for i = 1:randomImageLength
-    fileName =[siftdir '/' fnames(randInt(i)).name];
-    load(fileName, 'imname', 'descriptors', 'positions', 'scales', 'orients');
+    t =[siftdir '/' fnames(r(i)).name];
+    load(t, 'imname', 'descriptors', 'positions', 'scales', 'orients');
     descriptorsSize = size(descriptors,1);
-    vocabFile = [vocabFile; ones(descriptorsSize, 1).*i];
-    vocabOrientations = [vocabOrientations; orients];
-    vocabDescriptor = [vocabDescriptor ; descriptors];
-    vocabIndicies = [vocabIndicies; positions];
-    vocabScales = [vocabScales; scales];
+    voc=[voc ; descriptors];
+    vocPositions=[vocPositions;positions];
+    vocScales=[vocScales;scales];
+    vocOrients=[vocOrients;orients];
+    vocFile=[vocFile; ones(descriptorsSize,1).*i];
 
 end
 
-kVal = 1500;
-transposeVocabDescriptor = vocabDescriptor';
-[membership, origMeans, rms] = kmeansML(kVal, transposeVocabDescriptor);
-tranposeMeans = origMeans';
+% CHANGE LATER
+kValue = 1000;
+transposeVocabDescriptor = voc';
+[membership, means1, rms] = kmeansML(kValue, transposeVocabDescriptor);
+tranposeMeans = means1';
 means = tranposeMeans;
 save('kMeans.mat', 'means');
 
-[membershipRows, membershipCols] = size(membership);
+[s1, membershipCols] = size(membership);
 wordLen = 1000;
-o = zeros(wordLen, 1);
-for j=1:membershipRows
-    o(membership(j)) = o(membership(j))+1; 
+obj = zeros(wordLen, 1);
+for i=1:s1
+    obj(membership(i)) = obj(membership(i))+1;
 end
 
-% Want to pick two random numbers and find the max 
 numbersToPick = 2;
 membershipLength = length(membership);
 randWords = randperm(membershipLength, numbersToPick);
 
 for i = 1:randWords(1)
-   [~, firstWord] = max(o);
-   o(firstWord) = 0;
+  [~, index1] = max(obj);
+   obj(index1) = 0;
 end
 
 for i = 1:randWords(2)
-   [~, secondWord] = max(o);
-   o(secondWord) = 0;
+   [~, index2] = max(obj);
+   obj(index2) = 0;
 end
 
-word1 = means(firstWord, :);
-word2 = means(secondWord, :);
-firstSearch = find(firstWord == membership);
-secondSearch = find(secindWord == membership);
+word1 = means(index1, :);
+word2 = means(index2, :);
+search1 = find(membership == index1);
+search2 = find(membership == index2);
 
-firstSearchSize = size(firstSearch,1);
+firstSearchSize = size(search1,1);
 A = zeros(firstSearchSize, 1);
 for i=1:firstSearchSize
-    firstWordTranspose = word1;
-    z = distSqr(firstWordTranspose,vocabDescriptor(firstSearch(i,1),:)');
+    firstWordTranspose = word1';
+    z = distSqr(firstWordTranspose,voc(search1(i,1),:)');
     A(i,1) = z;
 end
 figure;
@@ -75,25 +73,25 @@ for i=1:matchesToPlot
     newA = A';
     [~, index] = min(newA);
     A(index, 1) = 1;
-    index = firstSearch(index);
-    t = [siftdir '/' fnames(randInt(vocabFile(index))).name];
+    index = search1(index);
+    t = [siftdir '/' fnames(r(vocFile(index))).name];
     load(t,'imname');
     gray = rgb2gray(imread([framesdir '/' imname]));
-    patch = getPatchFromSIFTParameters(vocPositions(index,:),vocabScales(index,:),vocabOrientations(index,:),gray); 
-    subplot(5,5,i); 
+    patch = getPatchFromSIFTParameters(vocPositions(index,:),vocScales(index,:),vocOrients(index,:),gray);
+    subplot(5,5,i);
     imshow(patch);
 end
 
-word1 = means(firstWord, :);
-word2 = means(secondWord, :);
-firstSearch = find(firstWord == membership);
-secondSearch = find(secindWord == membership);
+word1 = means(index1, :);
+word2 = means(index2, :);
+search1 = find(membership == index1);
+search2 = find(membership == index2);
 
-secondSearchSize = size(secondSearch,1);
+secondSearchSize = size(search2,1);
 A = zeros(secondSearchSize, 1);
 for i=1:secondSearchSize
-    secondWordTranspose = word2;
-    z = distSqr(secondtWordTranspose,vocabDescriptor(secondSearch(i,1),:)');
+    secondWordTranspose = word2';
+    z = distSqr(secondWordTranspose,voc(search2(i,1),:)');
     A(i,1) = z;
 end
 figure;
@@ -103,11 +101,11 @@ for i=1:matchesToPlot
     newA = A';
     [~, index] = min(newA);
     A(index, 1) = 1;
-    index = secondSearch(index);
-    t = [siftdir '/' fnames(randInt(vocabFile(index))).name];
+    index = search2(index);
+    t = [siftdir '/' fnames(r(vocFile(index))).name];
     load(t,'imname');
     gray = rgb2gray(imread([framesdir '/' imname]));
-    patch = getPatchFromSIFTParameters(vocPositions(index,:),vocabScales(index,:),vocabOrientations(index,:),gray); 
-    subplot(5,5,i); 
+    patch = getPatchFromSIFTParameters(vocPositions(index,:),vocScales(index,:),vocOrients(index,:),gray);
+    subplot(5,5,i);
     imshow(patch);
 end
