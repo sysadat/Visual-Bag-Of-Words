@@ -5,7 +5,7 @@ framesdir = './frames/';
 addpath('./provided_code/');
 
 % Get a random index out of a certain amount of images
-randomImageLength = 500;
+randomImageLength = 350;
 fnamesLength = length(fnames);
 randInt = randi(fnamesLength, randomImageLength, 1);
 
@@ -59,7 +59,7 @@ for i = 1:randWords(1)
   words(firstIndex) = 0;
 end
 
-for i = 1:randWords(2);
+for i = 1:randWords(2)
     [~, secondIndex] = max(words);
     if (i ~= 6)
        words(secondIndex) = 0;
