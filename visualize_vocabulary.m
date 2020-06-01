@@ -1,111 +1,130 @@
-addpath('./provided_code/');
-framesdir = './frames/';
+% Gain access to the paths with the SIFTS, frames and provided code
 siftdir = './sift/';
 fnames = dir([siftdir '/*.mat']);
+framesdir = './frames/';
+addpath('./provided_code/');
 
+% Get a random index out of a certain amount of images
 randomImageLength = 500;
 fnamesLength = length(fnames);
-r = randi(fnamesLength, randomImageLength, 1);
+randInt = randi(fnamesLength, randomImageLength, 1);
 
-voc=[];
-vocPositions=[];
-vocScales=[];
-vocOrients=[];
-vocFile=[];
+% Our vocabulary for our patches
+vocabFile = [];
+vocabDescriptor = [];
+vocabOrientations = [];
+vocabPositions = [];
+vocabScales = [];
 
+% Build and save our vocabulary from the images
 for i = 1:randomImageLength
-    t =[siftdir '/' fnames(r(i)).name];
-    load(t, 'imname', 'descriptors', 'positions', 'scales', 'orients');
-    descriptorsSize = size(descriptors,1);
-    voc=[voc ; descriptors];
-    vocPositions=[vocPositions;positions];
-    vocScales=[vocScales;scales];
-    vocOrients=[vocOrients;orients];
-    vocFile=[vocFile; ones(descriptorsSize,1).*i];
-
+    randomFrame = fnames(randInt(i));
+    siftImage = [siftdir '/' randomFrame.name];
+    load(siftImage, 'descriptors', 'orients', 'positions', 'scales', 'imname');
+    descriptorsSize = size(descriptors, 1);
+    vocabFile = [vocabFile; ones(descriptorsSize, 1).*i];
+    vocabDescriptor = [vocabDescriptor ; descriptors];
+    vocabOrientations = [vocabOrientations; orients];
+    vocabPositions = [vocabPositions; positions];
+    vocabScales = [vocabScales; scales];
 end
 
-% CHANGE LATER
+% How many kmeans we want to find
 kValue = 1000;
-transposeVocabDescriptor = voc';
-[membership, means1, rms] = kmeansML(kValue, transposeVocabDescriptor);
-tranposeMeans = means1';
-means = tranposeMeans;
-save('kMeans.mat', 'means');
+transposeVocabDescriptor = vocabDescriptor';
+[membership, origMeans, rms] = kmeansML(kValue, transposeVocabDescriptor);
+kMeans = origMeans';
+save('kMeans.mat', 'kMeans');
 
-[s1, membershipCols] = size(membership);
+% Keep track of how many times a certain amount of words appear in patches
+[membershipRows, membershipCols] = size(membership);
 wordLen = 1000;
-obj = zeros(wordLen, 1);
-for i=1:s1
-    obj(membership(i)) = obj(membership(i))+1;
+words = zeros(wordLen, 1);
+for i=1:membershipRows
+    words(membership(i)) = words(membership(i)) + 1;
 end
 
+% Pick a random amount of frames
 numbersToPick = 2;
 membershipLength = length(membership);
 randWords = randperm(membershipLength, numbersToPick);
+% So we keep track of what values we picked
+holdFirstWord = randWords(1);
+holdSecondWord = randWords(2);
 
+% Store the most common words
 for i = 1:randWords(1)
-  [~, index1] = max(obj);
-   obj(index1) = 0;
+  [~, firstIndex] = max(words);
+  words(firstIndex) = 0;
 end
 
-for i = 1:randWords(2)
-   [~, index2] = max(obj);
-   obj(index2) = 0;
+for i = 1:randWords(2);
+    [~, secondIndex] = max(words);
+    if (i ~= 6)
+       words(secondIndex) = 0;
+   end
 end
 
-word1 = means(index1, :);
-word2 = means(index2, :);
-search1 = find(membership == index1);
-search2 = find(membership == index2);
+% Find and search for the words in the patches
+firstWord = kMeans(firstIndex, :);
+secondWord = kMeans(secondIndex, :);
+firstSearch = find(membership == firstIndex);
+secondSearch = find(membership == secondIndex);
 
-firstSearchSize = size(search1,1);
-A = zeros(firstSearchSize, 1);
+% Store the distance of the vocab patches
+firstSearchSize = size(firstSearch, 1);
+storeDistance = zeros(firstSearchSize, 1);
 for i=1:firstSearchSize
-    firstWordTranspose = word1';
-    z = distSqr(firstWordTranspose,voc(search1(i,1),:)');
-    A(i,1) = z;
+    firstWordTranspose = firstWord';
+    squareDist = distSqr(firstWordTranspose, vocabDescriptor(firstSearch(i,1), :)');
+    storeDistance(i, 1) = squareDist;
 end
 figure;
 
+% Plot a certain amount of patches
 matchesToPlot = 25;
 for i=1:matchesToPlot
-    newA = A';
-    [~, index] = min(newA);
-    A(index, 1) = 1;
-    index = search1(index);
-    t = [siftdir '/' fnames(r(vocFile(index))).name];
-    load(t,'imname');
-    gray = rgb2gray(imread([framesdir '/' imname]));
-    patch = getPatchFromSIFTParameters(vocPositions(index,:),vocScales(index,:),vocOrients(index,:),gray);
-    subplot(5,5,i);
+    tranposeDistance = storeDistance';
+    [~, index] = min(tranposeDistance);
+    storeDistance(index, 1) = 1;
+    index = firstSearch(index);
+    randomFileIndex = randInt(vocabFile(index));
+    siftImage = [siftdir '/' fnames(randomFileIndex).name];
+    load(siftImage, 'imname');
+    itemToGray = imread([framesdir '/' imname]);
+    grayImage = rgb2gray(itemToGray);
+    patch = getPatchFromSIFTParameters(vocabPositions(index,:), vocabScales(index,:), vocabOrientations(index,:), grayImage);
+    numRows = 5;
+    numCols = 5;
+    subplot(numRows, numCols, i);
     imshow(patch);
 end
 
-word1 = means(index1, :);
-word2 = means(index2, :);
-search1 = find(membership == index1);
-search2 = find(membership == index2);
+% Repeat the process for the second word
 
-secondSearchSize = size(search2,1);
-A = zeros(secondSearchSize, 1);
+secondSearchSize = size(secondSearch, 1);
+storeDistance = zeros(secondSearchSize, 1);
 for i=1:secondSearchSize
-    secondWordTranspose = word2';
-    z = distSqr(secondWordTranspose,voc(search2(i,1),:)');
-    A(i,1) = z;
+    secondWordTranspose = secondWord';
+    squareDist = distSqr(secondWordTranspose, vocabDescriptor(secondSearch(i,1), :)');
+    storeDistance(i, 1) = squareDist;
 end
 figure;
 
 matchesToPlot = 25;
 for i=1:matchesToPlot
-    newA = A';
-    [~, index] = min(newA);
-    A(index, 1) = 1;
-    index = search2(index);
-    t = [siftdir '/' fnames(r(vocFile(index))).name];
-    load(t,'imname');
-    gray = rgb2gray(imread([framesdir '/' imname]));
-    patch = getPatchFromSIFTParameters(vocPositions(index,:),vocScales(index,:),vocOrients(index,:),gray);
-    subplot(5,5,i);
+    tranposeDistance = storeDistance';
+    [~, index] = min(tranposeDistance);
+    storeDistance(index, 1) = 1;
+    index = secondSearch(index);
+    randomFileIndex = randInt(vocabFile(index));
+    siftImage = [siftdir '/' fnames(randomFileIndex).name];
+    load(siftImage, 'imname');
+    itemToGray = imread([framesdir '/' imname]);
+    grayImage = rgb2gray(itemToGray);
+    patch = getPatchFromSIFTParameters(vocabPositions(index,:), vocabScales(index,:), vocabOrientations(index,:), grayImage);
+    numRows = 5;
+    numCols = 5;
+    subplot(numRows, numCols, i);
     imshow(patch);
 end
