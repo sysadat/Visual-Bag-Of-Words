@@ -44,10 +44,11 @@ for i=1:membershipRows
     words(membership(i)) = words(membership(i)) + 1;
 end
 
-% Pick a random amount of frames
+% Pick a random amount of frames and decide the frequency of words you want
+% to see 
 numbersToPick = 2;
-membershipLength = length(membership);
-randWords = randperm(membershipLength, numbersToPick);
+wordFrequency = 10;
+randWords = randperm(wordFrequency, numbersToPick);
 % So we keep track of what values we picked
 holdFirstWord = randWords(1);
 holdSecondWord = randWords(2);
