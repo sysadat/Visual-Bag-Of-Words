@@ -8,65 +8,67 @@ siftdir = './sift/';
 addpath('./provided_code/');
 fnames = dir([siftdir '/*.mat']);
 
-% Find the histogram and the distance and then sort them by finding minimum 
-% distance
-D = [];
+% We want to use kMeans to find histograms as bag of words and we want to
+% choose 3 frames as our queries and display the M = 5 most similar
+% frames in rank order
+ourDistance = [];
 fnamesLength = length(fnames);
-for i=1:fnamesLength
+for i = 1:fnamesLength
     fnamesIndex = fnames(i);
     fname = [siftdir '/' fnamesIndex.name];
-    load(fname, 'descriptors'); 
+    load(fname, 'descriptors');
+    % Find and sort minimum distance
     transposeDescriptors = descriptors';
-    transposeMeans = means';
-    D = distSqr(transposeDescriptors, transposeMeans);
-    sizeOfD = size(D);
-    sizeOfDRows = sizeOfD(1);
-    for k = 1:sizeOfDRows
-        [~,minI] = min(D(k,:));
-        A(k,1) = minI;
+    transposeMeans = kMeans';
+    ourDistance = distSqr(transposeDescriptors, transposeMeans);
+    sizeOfDistance = size(ourDistance);
+    sizeOfDistanceRows = sizeOfDistance(1);
+    for k = 1:sizeOfDistanceRows
+        [~, minIndex] = min(ourDistance(k, :));
+        A(k, 1) = minIndex;
     end
     indicies = 1:75;
-    bag_words(i,:) = histcounts(A, indicies);   
+    bagOfWords(i, :) = histcounts(A, indicies);
 end
 
-%choose 3 frames from the video dataset
-%MY PART MY PART MY PART MY PART MY PART MY PART  MY PART MY PART MY PART  
-frames = [212,162,91];%changed frames
+% Choose 3 frames
+frames = [212, 162, 91];
 
-for j = 1:length(frames)   
-    %load query frames image
+framesLength = length(frames);
+for j = 1:framesLength
     siftName = fnames(frames(j)).name;
-    t=[siftdir '/' siftName];
-    load(t);
-    
+    siftFrame = [siftdir '/' siftName];
+    load(siftFrame);
     imname = [framesdir '/' imname];
     im = imread(imname);
     figure;
-    subplot(2,3,1);
+    subplot(2, 3, 1);
     imshow(im);
     queryTitle = strcat('Query Image: ', imname);
     title(queryTitle);
-    % find smilarity
-    frameIndex = frames(j);
-    frame_bagWord = bag_words(frameIndex, :);
-    bag_wordsLength = length(bag_words);
-    frame_bagWordTranspose = frame_bagWord';
-    frame_bagWord_matrix = repmat(frame_bagWordTranspose, 1, bag_wordsLength);
-    bag_wordsTranspose = bag_words';
-    sim = corr(bag_wordsTranspose, frame_bagWord_matrix);
+    framesIndex = frames(j);
+    frameBagOfWords = bagOfWords(framesIndex, :);
+    bagOfWordsLength = length(bagOfWords);
+    frameBagOfWordsTranspose = frameBagOfWords';
+    frameBagOfWordsMatrix = repmat(frameBagOfWordsTranspose, 1, bagOfWordsLength);
+    bagOfWordsTranspose = bagOfWords';
+    sim = corr(bagOfWordsTranspose, frameBagOfWordsMatrix);
     isnanCheck = isnan(sim);
     sim(isnanCheck) = 0;
     [sortedDis, simIm] = sort(sim, 'descend');
-    %display the first five
-    startIndex = 2;
+
+    % We want to display a certain amount of similar frames. In this instance,
+    % we want to do the 5 most similar frames.
     endIndex = 6;
+    startIndex = 2;
     for i = startIndex:endIndex
-       simImage = fnames(simIm(i)).name;
+       simIndex = simIm(i);
+       simImage = fnames(simIndex).name;
        fname = [siftdir '/' simImage];
        load(fname);
        imname = [framesdir '/' imname];
        image = imread(imname);
-       subplot(2,3,i);    
+       subplot(2, 3, i);
        imshow(image);
        currentIndex = i - 1;
        stringCurrentIndex = num2str(currentIndex);
