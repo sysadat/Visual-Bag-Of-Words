@@ -8,6 +8,8 @@ siftdir = './sift/';
 addpath('./provided_code/');
 fnames = dir([siftdir '/*.mat']);
 
+% Find the histogram and the distance and then sort them by finding minimum 
+% distance
 D = [];
 fnamesLength = length(fnames);
 for i=1:fnamesLength
@@ -46,14 +48,24 @@ for j = 1:length(frames)
     sim = corr(bag_words',frame_bagWord_matrix);
     sim(isnan(sim)) = 0;
     [sortedDis,simIm] = sort(sim,'descend');
-    %display the first five
-    for i=2:6
-       fname = [siftdir '/' fnames(simIm(i)).name];
+    % We want to display a certain amount of similar frames. In this instance,
+    % we want to do the 5 most similar frames. 
+    startIndex = 2;
+    endIndex = 6;
+    for i = startIndex:endIndex
+       simImage = fnames(simIm(i));
+       fname = [siftdir '/' simImage.name];
        load(fname);
-       imname = [framesdir '/' imname];
-       im = imread(imname);
-       subplot(2,3,i);
-       imshow(im);
-       title({strcat('Result: ', num2str(i-1)),imname,strcat('Similarity: ',num2str(sortedDis(i)))});
-    end   
+       imageName = [framesdir '/' imageName];
+       image = imread(imageName);
+       subplot(2,3,i);    
+       imshow(image);
+       currentIndex = i - 1;
+       stringCurrentIndex = num2str(currentIndex);
+       resultTitle = strcat('Result Number: ', stringCurrentIndex);
+       stringDistance = num2str(sortedDis(i));
+       distanceTitle = strcat('Total Distance: ', stringDistance);
+       titleName = srtcat(resultTitle, imageName, distanceTitle);
+       title(titleName);
+    end
 end
