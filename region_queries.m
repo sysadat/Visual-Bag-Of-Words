@@ -32,9 +32,13 @@ for i=1:fnamesLength
     indicies = 1:75;
     bag_words(i,:) = histcounts(A, indicies);   
 end
+
+%MY PART
+
 for j = 1:length(frames)  
     %load query frames image
-    t=[siftdir '/' fnames(frames(j)).name];
+    siftName = fnames(frames(j)).name;
+    t=[siftdir '/' siftName];
     load(t);
     imname = [framesdir '/' imname];
     im = imread(imname);
@@ -50,6 +54,7 @@ for j = 1:length(frames)
     descriptors_oninds = [];
     for k = 1:r
         index = oninds(k);
+        
         descriptors_oninds = [descriptors_oninds; descriptors(index,:)];
     end
     B = dist2(descriptors_oninds, kMeans);
