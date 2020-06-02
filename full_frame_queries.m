@@ -29,13 +29,16 @@ for i=1:fnamesLength
     bag_words(i,:) = histcounts(A, indicies);   
 end
 
-
-frames = [600,61,200];
+%choose 3 frames from the video dataset
+%MY PART MY PART MY PART MY PART MY PART MY PART  MY PART MY PART MY PART  
+frames = [212,162,91];%changed frames
 
 for j = 1:length(frames)   
     %load query frames image
-    t=[siftdir '/' fnames(frames(j)).name];
+    siftName = fnames(frames(j)).name;
+    t=[siftdir '/' siftName];
     load(t);
+    
     imname = [framesdir '/' imname];
     im = imread(imname);
     figure;
@@ -48,16 +51,15 @@ for j = 1:length(frames)
     sim = corr(bag_words',frame_bagWord_matrix);
     sim(isnan(sim)) = 0;
     [sortedDis,simIm] = sort(sim,'descend');
-    % We want to display a certain amount of similar frames. In this instance,
-    % we want to do the 5 most similar frames. 
+    %display the first five
     startIndex = 2;
     endIndex = 6;
     for i = startIndex:endIndex
-       simImage = fnames(simIm(i));
-       fname = [siftdir '/' simImage.name];
+       simImage = fnames(simIm(i)).name;
+       fname = [siftdir '/' simImage];
        load(fname);
-       imageName = [framesdir '/' imageName];
-       image = imread(imageName);
+       imname = [framesdir '/' imname];
+       image = imread(imname);
        subplot(2,3,i);    
        imshow(image);
        currentIndex = i - 1;
@@ -65,7 +67,7 @@ for j = 1:length(frames)
        resultTitle = strcat('Result Number: ', stringCurrentIndex);
        stringDistance = num2str(sortedDis(i));
        distanceTitle = strcat('Total Distance: ', stringDistance);
-       titleName = srtcat(resultTitle, imageName, distanceTitle);
+       titleName = strcat(resultTitle, imname, distanceTitle);
        title(titleName);
     end
 end
