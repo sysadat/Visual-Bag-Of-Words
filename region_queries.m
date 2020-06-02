@@ -10,7 +10,7 @@ addpath('./provided_code/');
 load('kMeans.mat');
 
 % Select 3 frames 
-frames = [600,50,90];
+frames = [212, 162, 400];%changed frames
 
 % Find the histogram and the distance and then sort them by finding minimum 
 % distance
@@ -21,7 +21,7 @@ for i=1:fnamesLength
     fname = [siftdir '/' fnamesIndex.name];
     load(fname, 'descriptors'); 
     transposeDescriptors = descriptors';
-    transposeMeans = means';
+    transposeMeans = kMeans';
     D = distSqr(transposeDescriptors, transposeMeans);
     sizeOfD = size(D);
     sizeOfDRows = sizeOfD(1);
@@ -32,7 +32,33 @@ for i=1:fnamesLength
     indicies = 1:75;
     bag_words(i,:) = histcounts(A, indicies);   
 end
-
+for j = 1:length(frames)  
+    %load query frames image
+    t=[siftdir '/' fnames(frames(j)).name];
+    load(t);
+    imname = [framesdir '/' imname];
+    im = imread(imname);
+    %select regions
+    oninds = selectRegion(im,positions);
+    [r,~] = size(oninds);
+    
+    %question--------how to display the region as polygons in the picture?
+    
+    % find smilarity
+    frames_bagWords = bag_words(frames(j),:); % found histogram of the frames's bag_words
+    %find oninds similarity
+    descriptors_oninds = [];
+    for k = 1:r
+        index = oninds(k);
+        descriptors_oninds = [descriptors_oninds; descriptors(index,:)];
+    end
+    B = dist2(descriptors_oninds, kMeans);
+    [~,minIB] = min(B,[],2);
+    bag_words_oninds = histcounts(minIB,1:75);
+    oninds_bagWord_matrix = repmat(bag_words_oninds', 1, length(bag_words));
+    sim = corr(bag_words',oninds_bagWord_matrix);
+    sim(isnan(sim)) = 0;
+    [sortedDis,simIm] = sort(sim,'descend');
 
     % We want to display a certain amount of similar frames. In this instance,
     % we want to do the 5 most similar frames. 
@@ -42,8 +68,8 @@ end
        simImage = fnames(simIm(i));
        fname = [siftdir '/' simImage.name];
        load(fname);
-       imageName = [framesdir '/' imageName];
-       image = imread(imageName);
+       imname = [framesdir '/' imname];
+       image = imread(imname);
        subplot(2,3,i);    
        imshow(image);
        currentIndex = i - 1;
@@ -51,7 +77,7 @@ end
        resultTitle = strcat('Result Number: ', stringCurrentIndex);
        stringDistance = num2str(sortedDis(i));
        distanceTitle = strcat('Total Distance: ', stringDistance);
-       titleName = srtcat(resultTitle, imageName, distanceTitle);
+       titleName = strcat(resultTitle, imname, distanceTitle);
        title(titleName);
     end
 
