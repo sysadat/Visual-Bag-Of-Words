@@ -44,13 +44,19 @@ for j = 1:length(frames)
     figure;
     subplot(2,3,1);
     imshow(im);
-    title(strcat('Query Image: ',imname));
+    queryTitle = strcat('Query Image: ', imname);
+    title(queryTitle);
     % find smilarity
-    frame_bagWord = bag_words(frames(j),:);
-    frame_bagWord_matrix = repmat(frame_bagWord', 1, length(bag_words));
-    sim = corr(bag_words',frame_bagWord_matrix);
-    sim(isnan(sim)) = 0;
-    [sortedDis,simIm] = sort(sim,'descend');
+    frameIndex = frames(j);
+    frame_bagWord = bag_words(frameIndex, :);
+    bag_wordsLength = length(bag_words);
+    frame_bagWordTranspose = frame_bagWord';
+    frame_bagWord_matrix = repmat(frame_bagWordTranspose, 1, bag_wordsLength);
+    bag_wordsTranspose = bag_words';
+    sim = corr(bag_wordsTranspose, frame_bagWord_matrix);
+    isnanCheck = isnan(sim);
+    sim(isnanCheck) = 0;
+    [sortedDis, simIm] = sort(sim, 'descend');
     %display the first five
     startIndex = 2;
     endIndex = 6;
@@ -66,7 +72,7 @@ for j = 1:length(frames)
        stringCurrentIndex = num2str(currentIndex);
        resultTitle = strcat('Result Number: ', stringCurrentIndex);
        stringDistance = num2str(sortedDis(i));
-       distanceTitle = strcat('Total Distance: ', stringDistance);
+       distanceTitle = strcat('Similarity Rank: ', stringDistance);
        titleName = strcat(resultTitle, imname, distanceTitle);
        title(titleName);
     end
